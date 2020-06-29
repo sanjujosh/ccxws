@@ -89,11 +89,15 @@ class OKExClient extends BasicClient {
   }
 
   _sendSubTrades(remote_id) {
+    let businessType = 'spot' // Default
+    if (remote_id.includes('SWAP')) {
+      businessType = 'swap'
+    }
     this._sem.take(() => {
       this._wss.send(
         JSON.stringify({
           op: "subscribe",
-          args: [`spot/trade:${remote_id}`],
+          args: [`${businessType}/trade:${remote_id}`],
         })
       );
     });
@@ -196,6 +200,12 @@ class OKExClient extends BasicClient {
 
     // trades
     if (msg.table === "spot/trade") {
+      this._processTrades(msg);
+      return;
+    }
+
+    // trades swap
+    if (msg.table === "swap/trade") {
       this._processTrades(msg);
       return;
     }
@@ -391,6 +401,10 @@ class OKExClient extends BasicClient {
   _constructTrade(datum, market) {
     let { price, side, size, timestamp, trade_id } = datum;
     let ts = moment.utc(timestamp).valueOf();
+    // If the market is swap, convert the size to BTC. 
+    if (market.id.includes('SWAP')) {
+      size = price/size
+    }
 
     return new Trade({
       exchange: "OKEx",
