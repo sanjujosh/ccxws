@@ -403,7 +403,7 @@ class OKExClient extends BasicClient {
     let ts = moment.utc(timestamp).valueOf();
     // If the market is swap, convert the size to BTC. 
     if (market.id.includes('SWAP')) {
-      size = price/size
+      size = size/price
     }
 
     return new Trade({
